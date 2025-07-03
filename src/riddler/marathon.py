@@ -28,11 +28,11 @@ class Team(DotDict, JSONable):
     channels: List[int]
     role: Dict[int, int]
 
-    def __init__(self, *, name: str, members: List[int], channels: List[int], role = {}) -> None:
+    def __init__(self, *, name: str, members: List[int], channels: List[int], role = None) -> None:
         self.name = name 
         self.members = members
         self.channels = channels
-        self.role = role
+        self.role = role or {}
 
     def includes(self, snowflake: int) -> bool:
         return snowflake in self.members    
