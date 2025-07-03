@@ -8,7 +8,7 @@ from os import makedirs
 from riddler import embeds
 from riddler.jsonable import DotDict, JSONable
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Dict
-from yaml import load as yaml_load, dump as yaml_dump, Loader, Dumper
+from yaml import load as yaml_load, dump as yaml_dump, Loader, Dumper, SafeDumper
 
 if TYPE_CHECKING:
     from riddler import Riddler
@@ -453,9 +453,13 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         return attempts, puzzles, teams
 
     def store(self, *, attempts, puzzles = None, teams = None):
+        class NoAliasDumper(SafeDumper):
+            def ignore_aliases(self, data):
+                return True
+
         def _store(obj: dict, path: str):
             with open('data/marathon/' + path, 'w') as dest:
-                yaml_dump(obj, dest, Dumper=Dumper)
+                yaml_dump(obj, dest, Dumper=NoAliasDumper)
         
         makedirs('data/marathon', exist_ok=True)
         _store(attempts, 'attempts.yaml')
