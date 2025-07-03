@@ -163,7 +163,7 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         Returns a list of puzzles not yet started by the given team.
         """
         attempts, puzzles, teams = self.load()
-        team = self.find_team(interaction.user.id, teams)
+        team = self.find_team(interaction.user, teams)
         if not team:
             return []
 
@@ -176,7 +176,7 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         Returns a list of in-progress puzzles that are yet to be submitted.
         """
         attempts, puzzles, teams = self.load()
-        team = self.find_team(interaction.user.id, teams)
+        team = self.find_team(interaction.user, teams)
         if not team:
             return []
         
@@ -244,7 +244,7 @@ class Marathon(commands.GroupCog, group_name='marathon'):
             return
         
         attempts, _, teams = self.load()
-        curr = self.find_team(player.id, teams)
+        curr = self.find_team(player, teams)
         if curr is not None:
             return await self.send_ethereal(interaction, description=f'{player.mention} is already on {curr.repr(interaction)}.')
         
@@ -265,7 +265,7 @@ class Marathon(commands.GroupCog, group_name='marathon'):
             return
         
         attempts, _, teams = self.load()
-        curr = self.find_team(player.id, teams)
+        curr = self.find_team(player, teams)
         if curr is None:
             return await self.send_ethereal(interaction, description=f'{player.mention} is not on a team.')
         
@@ -412,19 +412,24 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         """
         Checks that the user is a member of an active team, and responds if not.
         """
-        team = self.find_team(interaction.user.id, teams)
+        team = self.find_team(interaction.user, teams)
         if not team:
             await interaction.response.send_message(embed=embeds.unauthorized(self.bot, message='You need to be on a team to do that.'), ephemeral=True, delete_after=5)
         return team
 
-    def find_team(self, snowflake: int, teams: Dict[str, Team]) -> Optional[Team]:
+    def find_team(self, member: Member, teams: Dict[str, Team]) -> Optional[Team]:
         """
         Determines if the user is on an active team or not.
         """
-        try:
-            return next((team for team in teams.values() if team.includes(snowflake)))
-        except:
-            return None
+        for team in teams.values():
+            # By common role
+            role_ids = [r for r in team.role.values()]
+            if any(r.id in role_ids for r in member.roles): 
+                return team
+            # By user
+            if team.includes(member.id):
+                return team
+        return None
 
     async def send_ethereal(self, interaction: Interaction, *, followup = False, ethereal = True, ephemeral = True, **kwargs):
         """
