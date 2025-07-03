@@ -453,7 +453,7 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         return attempts, puzzles, teams
 
     def store(self, *, attempts, puzzles = None, teams = None):
-        class NoAliasDumper(SafeDumper):
+        class NoAliasDumper(Dumper):
             def ignore_aliases(self, data):
                 return True
 
