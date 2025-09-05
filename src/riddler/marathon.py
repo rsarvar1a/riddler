@@ -422,7 +422,7 @@ class Marathon(commands.GroupCog, group_name='marathon'):
             return
 
         attempts, _, teams = self.load()
-        this_puzzle: dict[str, Attempt] = { t: t[puzzle] for _, t in attempts.values() }
+        this_puzzle: dict[str, Attempt] = { t: t[puzzle] for t in attempts.values() }
         descs = [f'<@&{teams[t].role[interaction.guild_id]}>: {p.timer.duration} - {p.link}' for t, p in this_puzzle.items()]
 
         await self.send_ethereal(interaction, ethereal=False, title=f'Ranking - {puzzle}', description='\n\n'.join(descs))
