@@ -184,6 +184,18 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         filtered = [puzzle for puzzle in submittables if partial in self.repr_puzzle(puzzle)]
         return [apc.Choice(name=self.repr_puzzle(puzzle), value=puzzle.id) for puzzle in filtered]
 
+    async def autocomplete_all_puzzles(self, interaction: Interaction, partial: str):
+        """
+        Returns a list of all puzzles on the given team.
+        """
+        attempts, puzzles, teams = self.load()
+        team = self.find_team(interaction.user, teams)
+        if not team:
+            team = teams[0] # just need a list of puzzle IDs
+        
+        filtered = [puzzle for _, puzzle in puzzles.values() if partial in self.repr_puzzle(puzzle)]
+        return [apc.Choice(name=self.repr_puzzle(puzzle), value=puzzle.id) for puzzle in filtered]
+
     # COMMANDS
 
     @apc.command()
@@ -315,6 +327,28 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         self.store(attempts=attempts, puzzles=puzzle_dict, teams=team_dict)
 
     @apc.command()
+    @apc.autocomplete(puzzle=autocomplete_all_puzzles)
+    @apc.autocomplete(team=autocomplete_teams)
+    @apc.describe(puzzle='the puzzle to target')
+    @apc.describe(team='the team to target')
+    async def reset(self, interaction: Interaction, puzzle: str, team: str):
+        """
+        Reset a puzzle for a team
+        """
+        if not await self.ensure_owner(interaction):
+            return
+        
+        attempts, _, teams = self.load()
+
+        selected_team = teams[team]
+        reset_attempt = Attempt(puzzle=puzzle, team=selected_team.name, state='not started')
+        attempts[puzzle][selected_team.name] = reset_attempt
+        
+        self.store(attempts=attempts, teams=teams)
+
+        await self.send_ethereal(interaction, ethereal=False, description=f'Reset puzzle ${puzzle} for team ${selected_team.name}.')
+
+    @apc.command()
     @apc.autocomplete(puzzle=autocomplete_unlockable)
     @apc.describe(puzzle="the puzzle")
     async def unlock(self, interaction: Interaction, puzzle: str):
@@ -376,6 +410,22 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         attempts[puzzle][team.name] = relevant_attempt
 
         self.store(attempts=attempts)
+
+    @apc.command()
+    @apc.autocomplete(puzzle=autocomplete_all_puzzles)
+    @apc.describe(puzzle="the puzzle to score")
+    async def rank_one(self, interaction: Interaction, puzzle: str):
+        """
+        Get the links and timers on one puzzle
+        """
+        if not await self.ensure_owner(interaction):
+            return
+
+        attempts, _, teams = self.load()
+        this_puzzle: dict[str, Attempt] = { t: t[puzzle] for _, t in attempts.values() }
+        descs = [f'<@&{teams[t].role[interaction.guild_id]}>: {p.timer.duration} - {p.link}' for t, p in this_puzzle.items()]
+
+        await self.send_ethereal(interaction, ethereal=False, title=f'Ranking - {puzzle}', description='\n\n'.join(descs))
 
     # HELPERS
 
