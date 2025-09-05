@@ -193,7 +193,7 @@ class Marathon(commands.GroupCog, group_name='marathon'):
         if not team:
             team = teams[0] # just need a list of puzzle IDs
         
-        filtered = [puzzle for _, puzzle in puzzles.values() if partial in self.repr_puzzle(puzzle)]
+        filtered = [puzzle for puzzle in puzzles.values() if partial in self.repr_puzzle(puzzle)]
         return [apc.Choice(name=self.repr_puzzle(puzzle), value=puzzle.id) for puzzle in filtered]
 
     # COMMANDS
